@@ -119,7 +119,8 @@ COPY lighttpd.conf /etc/lighttpd/lighttpd.conf
 RUN rm /var/www/html/index.lighttpd.html \
 	&& chown -R www-data:www-data -R /var/www/html/ \
 	&& echo "pivpnWEB_PASS=password" >> /tmp/setupVars.conf \
-	&& echo "pivpnWEB_PORT=0" >> /tmp/setupVars.conf
+	&& echo "pivpnWEB_PORT=0" >> /tmp/setupVars.conf \
+	&& echo "www-data ALL=(ALL) NOPASSWD:/bin/cat" >> /etc/sudoers
 
 #=============================================================================================================================
 # Everything else required for this Docker image:

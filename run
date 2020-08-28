@@ -1,12 +1,5 @@
 #!/usr/bin/env bash
 
-# Make sure we are running in privleged mode:
-if ! ip link add dummy0 type dummy >/dev/null; then
-	printf "::: Docker Container not running in privleged mode, exiting\\n"
-	exit 1
-fi
-ip link delete dummy0 >/dev/null
-
 # If the "/etc/openvpn" directory isn't mounted, fail starting the container!
 if ! mount | grep "/etc/openvpn" >& /dev/null; then
 	printf "::: Storage location \"/etc/openvpn\" is not mounted, exiting\\n"
@@ -114,5 +107,5 @@ fi
 
 	# Notify user that OpenVPN has been started....
 	printf "::: PiVPN Service Started on port ${pivpnPORT}\\n"
-	openvpn --config /etc/openvpn/server.conf
+	openvpn --config /etc/openvpn/server.conf --log /var/log/openvpn.log
 } 2>&1 | tee "/etc/openvpn/pivpn-docker.log"
