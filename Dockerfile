@@ -109,23 +109,14 @@ RUN sed -i "/^pivpnHOST=/d" /tmp/setupVars.conf \
 #=============================================================================================================================
 # What each line does (in order) to set up the web interface:
 #  1. Copies the "html" folder from the repo to "/var/www/html".
-#  2. Remove original lighttpd html file.
-#  3. Add the "mod_cgi" and "mod_auth" to "/etc/lighttpd/lighttpd.conf".
-#  4. Add a cgi handler for the ".sh" extension to "/etc/lighttpd/lighttpd.conf".
-#  5. Add the ability to use files with ".sh" extension properly to "/etc/lighttpd/lighttpd.conf".
-#  6. Add the contents of "/var/www/html/lighttpd.inc" to "/etc/lighttpd/lighttpd.conf".
-#  7. Remove "/var/www/html/lighttpd.inc".
-#  8. Change ownership of the "/var/www/html" to "www-data:www-data".
-#  9. Add default web password to the "/tmp/setupVars.conf".
-# 10. Add default web port to the "/tmp/setupVars.conf".
+#  2. Copies our custom "lighttpd.conf" to the "/etc/lighttpd" directory.
+#  3. Change ownership of the "/var/www/html" to "www-data:www-data".
+#  4. Add default web password to the "/tmp/setupVars.conf".
+#  5. Add default web port to the "/tmp/setupVars.conf".
 #=============================================================================================================================
 COPY html /var/www/html/
+COPY lighttpd.conf /etc/lighttpd/lighttpd.conf
 RUN rm /var/www/html/index.lighttpd.html \
-	&& sed -i "s|\"mod_redirect\"|\"mod_redirect\",\"mod_cgi\",\"mod_auth\"|" /etc/lighttpd/lighttpd.conf \
-	&& sed -i "/server.document-root/i \cgi.assign = \( \".sh\" => \"/bin/bash\" \)" /etc/lighttpd/lighttpd.conf \
-	&& sed -i "s|index.php|index.sh\", \"index.php|" /etc/lighttpd/lighttpd.conf \
-	&& cat /var/www/html/lighttpd.inc >> /etc/lighttpd/lighttpd.conf \
-	&& rm /var/www/html/lighttpd.inc \
 	&& chown -R www-data:www-data -R /var/www/html/ \
 	&& echo "pivpnWEB_PASS=password" >> /tmp/setupVars.conf \
 	&& echo "pivpnWEB_PORT=0" >> /tmp/setupVars.conf

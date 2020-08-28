@@ -1,0 +1,10 @@
+#!/bin/bash
+OS=armv7hf
+[[ "$HOSTTYPE" == "x86_64" ]] && OS=amd64
+docker run --name pivpn -it --rm --privileged --net host \
+	-e pivpnWEB_PORT=49080 \
+	-e pivpnPORT=2194 \
+	-e IPv4dev=enp7s0 \
+	-v /home/docker/pivpn/openvpn:/etc/openvpn \
+	-v /home/docker/pivpn/ovpns:/home/pivpn/ovpns \
+	xptsp/pivpn:${OS}-v3 $@

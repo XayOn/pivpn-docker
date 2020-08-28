@@ -1,0 +1,7 @@
+#!/bin/bash
+OS=armv7hf
+[[ "$HOSTTYPE" == "x86_64" ]] && OS=amd64
+echo y | docker container prune
+docker rmi xptsp/pivpn:${OS}-v3 
+docker build -t xptsp/pivpn:${OS}-v3 .
+

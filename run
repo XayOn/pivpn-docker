@@ -55,7 +55,7 @@ fi
 	pivpnDNS1=${pivpnDNS1:-"8.8.8.8"}
 	pivpnDNS2=${pivpnDNS2:-"8.8.4.4"}
 	[[ "${pivpnDNS2}" == "none" ]] && unset pivpnDNS2
-	pivpnWEB_MGMT=${pivpnMANAGEMENT:-"$(($pivpnGUI_PORT + 1))"}
+	pivpnWEB_MGMT=${pivpnMANAGEMENT:-"$(($pivpnWEB_PORT + 1))"}
 
 	if [ -z "${pivpnHOST}" ]; then
 		if ! pivpnHOST=$(dig +short myip.opendns.com @resolver1.opendns.com); then
