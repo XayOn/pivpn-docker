@@ -120,7 +120,12 @@ RUN rm /var/www/html/index.lighttpd.html \
 	&& chown -R www-data:www-data -R /var/www/html/ \
 	&& echo "pivpnWEB_PASS=password" >> /tmp/setupVars.conf \
 	&& echo "pivpnWEB_PORT=0" >> /tmp/setupVars.conf \
-	&& echo "www-data ALL=(ALL) NOPASSWD:/bin/cat" >> /etc/sudoers
+	&& echo "pivpnHOST=" >> /tmp/setupVars.conf \
+	&& echo "pivpnKeepAlive=" >> /tmp/setupVars.conf \
+	&& echo "SHOW_REVOKED=1" >> /tmp/setupVars.conf \
+	&& echo "www-data ALL=(ALL) NOPASSWD: ALL" >> /etc/sudoers \
+	&& mv /var/www/html/index.sh /var/www/html/index.cgi \
+	&& mv /etc/lighttpd/lighttpd.conf /etc/lighttpd/lighttpd.conf.bak
 
 #=============================================================================================================================
 # Everything else required for this Docker image:
