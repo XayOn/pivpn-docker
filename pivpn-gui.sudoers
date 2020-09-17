@@ -1,0 +1,5 @@
+www-data ALL=(ALL) NOPASSWD: /bin/cat /etc/openvpn/easy-rsa/pki/index.txt
+www-data ALL=(ALL) NOPASSWD: /bin/cat /var/log/openvpn.log
+www-data ALL=(ALL) NOPASSWD: /bin/cat /var/log/openvpn-status.log
+www-data ALL=(ALL) NOPASSWD: /bin/cat /home/pivpn/ovpns/*
+www-data ALL=(ALL) NOPASSWD: /usr/local/bin/pivpn

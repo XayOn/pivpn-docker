@@ -80,15 +80,14 @@ RUN cp "${ORIGINAL}" "${MODDED}" \
 	&& sed -i "s|  if ! getent passwd openvpn; then|}\n\ncreateOVPNuser(){\n  if ! getent  passwd openvpn; then|" "${MODDED}" \
 	&& sed -i "s|  \${SUDOE} chown \"\$debianOvpnUserGroup\" /etc/openvpn/crl.pem|}\n\ncreateServerConf(){\n  \${SUDOE} chown \$debianOvpnUserGroup /etc/openvpn/crl.pem|" "${MODDED}" \
 	&& sed -i "s|getent passwd openvpn|getent passwd openvpn \>\& /dev/null|" "${MODDED}" \
-	&& sed -i "s|if \[ \"\${USE_PREDEFINED_DH_PARAM}\" -eq 1 \]; then|if \[ \"\${DOWNLOAD_DH_PARAM}\" -eq 1 \]; then\n\t\t\t\${SUDOE} curl \"https://2ton.com.au/getprimes/random/dhparam/\${pivpnENCRYPT}\" -o pki/dh\"\${pivpnENCRYPT}\".pem\n\t\telif [ \"\${USE_PREDEFINED_DH_PARAM}\" -eq 1 ]; then|" ${MODDED}
+	&& sed -i "s|if \[ \"\${USE_PREDEFINED_DH_PARAM}\" -eq 1 \]; then|if \[ \"\${DOWNLOAD_DH_PARAM}\" -eq 1 \]; then\n\t\t\t\${SUDOE} curl \"https://2ton.com.au/getprimes/random/dhparam/\${pivpnENCRYPT}\" -o pki/dh\"\${pivpnENCRYPT}\".pem\n\t\telif [ \"\${USE_PREDEFINED_DH_PARAM}\" -eq 1 ]; then|" ${MODDED} \
+	&& sed -i "s|whiptail --msgbox --backtitle \"Setup OpenVPN\"|echo; #whiptail --msgbox --backtitle \"Setup OpenVPN\"|g" "${MODDED}"
 
 #=============================================================================================================================
 # What each line does (in order):
 #  1. Run the modified installer
-#  2. Removes the calling of function "main"
 #=============================================================================================================================
-RUN bash "${MODDED}" --unattended "${setupVars}" --reconfigure \
-	&& sed -i "/main \"\$@\"/d" "${MODDED}"
+RUN bash "${MODDED}" --unattended "${setupVars}" --reconfigure
 
 #=============================================================================================================================
 # What each line does (in order):
@@ -97,39 +96,51 @@ RUN bash "${MODDED}" --unattended "${setupVars}" --reconfigure \
 #  3. Adds "pivpnUSE_PREDEFINED_DH_PARAM" variable to "/tmp/setupVars.conf".
 #  4. Adds "pivpnDOWNLOAD_DH_PARAM" variable to "/tmp/setupVars.conf".
 #  5. Adds "pivpnTWO_POINT_FOUR" variable to "/tmp/setupVars.conf".
-#  6. Change the PiVPN network interface name to "pivpn".
+#  6. Adds default web password to "/tmp/setupVars.conf".
+#  7. Adds default web port to "/tmp/setupVars.conf".
+#  8. Adds blank pivpn host IP/domain name to "/tmp/setupVars.conf".
+#  9. Adds blank "keep alive" variable to "/tmp/setupVars.conf".
+# 10. Adds setting to show revoked certs to "/tmp/setupVars.conf".
+# 11. Change the PiVPN network interface name to "pivpn".
 #=============================================================================================================================
 RUN sed -i "/^pivpnHOST=/d" /tmp/setupVars.conf \
 	&& sed -i "/^IPv4dev=/d" /tmp/setupVars.conf \
 	&& echo "pivpnDH_DOWNLOAD=0" >> /tmp/setupVars.conf \
 	&& echo "pivpnDH_PREDEFINED=0" >> /tmp/setupVars.conf \
 	&& echo "pivpnTWO_POINT_FOUR=0" >> /tmp/setupVars.conf \
-	&& sed -i "s|^pivpnDEV=.*|pivpnDEV=pivpn|" /tmp/setupVars.conf
-
-#=============================================================================================================================
-# What each line does (in order) to set up the web interface:
-#  1. Copies the "html" folder from the repo to "/var/www/html".
-#  2. Copies our custom "lighttpd.conf" to the "/etc/lighttpd" directory.
-#  3. Change ownership of the "/var/www/html" to "www-data:www-data".
-#  4. Add default web password to the "/tmp/setupVars.conf".
-#  5. Add default web port to the "/tmp/setupVars.conf".
-#=============================================================================================================================
-COPY html /var/www/html/
-COPY lighttpd.conf /etc/lighttpd/lighttpd.conf
-RUN rm /var/www/html/index.lighttpd.html \
-	&& chown -R www-data:www-data -R /var/www/html/ \
 	&& echo "pivpnWEB_PASS=password" >> /tmp/setupVars.conf \
 	&& echo "pivpnWEB_PORT=0" >> /tmp/setupVars.conf \
 	&& echo "pivpnHOST=" >> /tmp/setupVars.conf \
 	&& echo "pivpnKeepAlive=" >> /tmp/setupVars.conf \
 	&& echo "SHOW_REVOKED=1" >> /tmp/setupVars.conf \
-	&& echo "www-data ALL=(ALL) NOPASSWD: ALL" >> /etc/sudoers \
-	&& mv /var/www/html/index.sh /var/www/html/index.cgi \
-	&& mv /etc/lighttpd/lighttpd.conf /etc/lighttpd/lighttpd.conf.bak
+	&& sed -i "s|^pivpnDEV=.*|pivpnDEV=pivpn|" /tmp/setupVars.conf \
+	&& echo "HELP_SHOWN=1" >> /etc/pivpn/openvpn/setupVars.conf
+
+#=============================================================================================================================
+# What each line does (in order) to set up the web interface:
+#  1. Copies the "html" folder from the repo to "/var/www/pivpn".
+#  2. Copies the PiVPN GUI site configuration to "/etc/lighttpd/conf-available/12-pivpn.conf".
+#  3. Copies the PiVPN GUI sudoers rules to "/etc/sudoers.d/pivpn-gui".
+#  4. Removes the calling of function "main"
+#  5. Change ownership of the "/var/www/html" to "www-data:www-data".
+#  6. Make backup of the "/etc/lighttpd/lighttpd.conf.bak" file.
+#  7. Enable the lighttpd "cgi" configuration module.
+#  8. Enable the lighttpd "auth" configuration module.
+#  9. Enable our custom "pivpn" configuration module.
+#=============================================================================================================================
+COPY html /var/www/pivpn/
+COPY 12-pivpn.conf /etc/lighttpd/conf-available/12-pivpn.conf
+COPY pivpn-gui.sudoers /etc/sudoers.d/pivpn-gui
+RUN sed -i "/^main /d" "${MODDED}" \
+	&& chown -R www-data:www-data -R /var/www/pivpn/ \
+	&& cp /etc/lighttpd/lighttpd.conf /etc/lighttpd/lighttpd.conf.bak \
+	&& lighttpd-enable-mod cgi \
+	&& lighttpd-enable-mod auth \
+	&& lighttpd-enable-mod pivpn
 
 #=============================================================================================================================
 # Everything else required for this Docker image:
 #=============================================================================================================================
 WORKDIR /home/"${install_user}"
-COPY run .
-CMD /bin/bash ./run
+COPY run /home/"${install_user}/"
+CMD /home/"${install_user}"/run

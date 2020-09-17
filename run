@@ -14,6 +14,16 @@ function check_mounted()
 		printf "::: Storage location \"/home/pivpn/ovpns\" is not mounted, exiting\\n"
 		exit 1
 	fi
+
+	# Create a temporary file in one directory, then see if it exists in the other.
+	# If it does, abort because the two directories must be seperate!	
+	FILE=$(mktemp --tmpdir=/home/pivpn/ovpns/ tmp.XXXXXXXXX)
+	EXIST=$([[ -f "/etc/openvpn/$(basename ${FILE})" ]] && echo "Y")
+	rm ${FILE}
+	if [[ "${EXIST}" == "Y" ]]; then
+		printf "::: Different folders are required for \"/home/pivpn/ovpns\" and \"/etc/openvpn\"!  Aborting!\\n"
+		exit 1
+	fi
 }
 
 # Function that stops the web server and openvpn
@@ -22,7 +32,7 @@ function cleanup()
 	LOOP=0
 	echo " detected!"
 	pgrep lighttpd >& /dev/null && printf "::: Stopping Lighttpd...\\n" && pkill lighttpd
-	[[ ! -z "${OPVN_PID}" ]] && printf "::: Stopping PiVPN Service...\\n" && kill ${OPVN_PID}
+	[[ -f /run/server.pid ]] && kill $(cat /run/server.pid) && rm /run/server.pid
 	exit
 }
 
@@ -72,47 +82,58 @@ pivpnDNS1=${pivpnDNS1:-"8.8.8.8"}
 pivpnDNS2=${pivpnDNS2:-"8.8.4.4"}
 
 # Use the settings specified by the web UI, overriding any settings specified by environment variables:
-if [[ ! -f /etc/openvpn/.params ]]; then
-	guiUSERNAME=${guiUSERNAME:-"admin"}
-	guiSALT=$(echo ${guiUSERNAME,,} | md5sum | cut -d" " -f 1)
-	guiPASSWORD=${guiPASSWORD:-"password"}
-	guiPASSWORD="$(echo ${guiSALT}$(echo ${guiPASSWORD} | md5sum | cut -d" " -f 1) | sha256sum | cut -d" " -f 1)"
-
-	cat << EOF > /etc/openvpn/.params
+if [[ ! -f /etc/openvpn/pivpn.env ]]; then
+	cat << EOF > /etc/openvpn/pivpn.env
 pivpnENCRYPT=${pivpnENCRYPT}
-guiUSERNAME="${guiUSERNAME}"
-guiPASSWORD="${guiPASSWORD}"
-guiSALT="${guiSALT}"
-guiNAME="${guiName:-"Adminstrator"}"
 guiCreation="$(date +"%B %d, %Y")"
 EOF
-	chmod a+w /etc/openvpn/.params
-	chown www-data:www-data /etc/openvpn/.params
+	chmod a+w /etc/openvpn/pivpn.env
+	chown www-data:www-data /etc/openvpn/pivpn.env
 fi
 
 # If the server name has been decided, read it in now.  This is done before
 # reading "setupVars.conf" to avoid incorrectly overwriting the setting.
 [[ -f /etc/openvpn/.server_name ]] && source /etc/openvpn/.server_name
 
+# Start the Web Management page ONLY if not already started AND if the web port specified is greater than 0:
+if [[ "$1" == "start_webserver" ]]; then
+	# Read the parameters:
+	source /etc/openvpn/pivpn.env
+
+	pgrep lighttpd >& /dev/null && pkill lighttpd
+	if [[ "${pivpnWEB_PORT}" -gt 0 ]]; then
+		# Notify user that Lighttpd has been started...
+		printf "::: Lighttpd $([[ ! -z "${HTTP_PID}" ]] && echo "re")started on port ${pivpnWEB_PORT}\n"
+		echo "${guiUSERNAME}:${guiPASSWORD}" > /etc/lighttpd/.lighttpdpassword
+		cp /etc/lighttpd/lighttpd.conf.bak /etc/lighttpd/lighttpd.conf
+		sed -i "s|= 80|= ${pivpnWEB_PORT}|g" /etc/lighttpd/lighttpd.conf
+		sed -i "s|:.*\" {|:${pivpnWEB_PORT}\" {|g" /etc/lighttpd/conf-available/12-pivpn.conf
+		/usr/sbin/lighttpd -f /etc/lighttpd/lighttpd.conf
+	fi
+	exit
+fi
+
 # If certain settings aren't set, try to set them automagically:
 [[ -z "${IPv4dev}" ]] && chooseInterface
+echo "::: Listening to interface \"${IPv4dev}\""
 [[ -z "${pivpnHOST}" ]] && askPublicIPOrDNS
+echo "::: PiVPN host IP/domain name is \"${pivpnHOST}\""
 [[ -z "${SERVER_NAME}" ]] && generateServerName
+echo "::: Server name is \"${SERVER_NAME}\""
 
 # Enter the loop, restarting services as necessary:
 trap cleanup EXIT
 LOOP=1
 while [[ "${LOOP}" -eq 1 ]]; do
 	# Read the parameters:
-	source /etc/openvpn/.params
+	source /etc/openvpn/pivpn.env
 
 	# Fix the specified parameters if necessary:
 	[[ "${pivpnDNS2}" == "none" ]] && unset pivpnDNS2
-	[[ "${pivpnWEB_PORT}" -le 0 ]] && pivpnWEB_PORT=0
 	[[ "${pivpnWEB_MGMT}" -lt 0 && "${pivpnWEB_PORT}" -gt 0 ]] && pivpnWEB_MGMT=$((${pivpnWEB_PORT} + 1))
 
 	# Generate server certificate and DH parameters if necessary.
-	[[ ! -d /etc/openvpn/easy-rsa ]] && GenerateOpenVPN
+	[[ ! -d /etc/openvpn/easy-rsa || ! -f /etc/openvpn/crl.pem ]] && GenerateOpenVPN
 
 	# Create the "/etc/openvpn/server.conf" file.
 	createServerConf
@@ -130,22 +151,19 @@ while [[ "${LOOP}" -eq 1 ]]; do
 	confNetwork
 	confOVPN
 
-	# Start the Web Management page ONLY if not already started AND if the web port specified is greater than 0:
-	if ! pgrep lighttpd >& /dev/null; then
-		if [[ "${pivpnWEB_PORT}" -gt 0 ]]; then
-			# Notify user that Lighttpd has been started...
-			printf "::: Lighttpd $([[ ! -z "${HTTP_PID}" ]] && echo "re")started on port ${pivpnWEB_PORT}\n"
-			cp /etc/lighttpd/lighttpd.conf.bak /etc/lighttpd/lighttpd.conf
-			sed -i "s|= 80|= ${pivpnWEB_PORT}|g" /etc/lighttpd/lighttpd.conf
-			/usr/sbin/lighttpd -f /etc/lighttpd/lighttpd.conf
-		fi
-	fi
+	# Start the webserver, if required:
+	[[ "${pivpnWEB_PORT}" -le 0 ]] && pivpnWEB_PORT=0
+	$0 start_webserver
 
 	# Notify user that OpenVPN has been started....
+	if [[ -f /run/server.pid ]]; then
+		kill $(cat /run/server.pid)
+		rm /run/server.pid
+	fi
 	printf "::: PiVPN Service $([[ ! -z "${OPVN_PID}" ]] && echo "re")started on port ${pivpnPORT}\\n"
 	openvpn --config /etc/openvpn/server.conf --log /var/log/openvpn.log &
-	OPVN_PID=$!
-	while ps -p ${OVPN_PID} > /dev/null; do
-		echo -n ""
-	done
+	OVPN_PID=$!
+	echo $OVPN_PID > /run/server.pid
+	wait ${OVPN_PID}
+	exit
 done

@@ -1,13 +1,12 @@
 #!/bin/bash
 OS=armv7hf
 [[ "$HOSTTYPE" == "x86_64" ]] && OS=amd64
-chmod 777 $PWD/html/index.sh
 docker run --name pivpn -it --rm --privileged --net host \
 	-e pivpnWEB_PORT=49080 \
 	-e pivpnPORT=2194 \
 	-e IPv4dev=enp7s0 \
 	-v $HOME/openvpn-data:/etc/openvpn \
 	-v $HOME/ovpns:/home/pivpn/ovpns \
-	-v $PWD/html/index.sh:/var/www/html/index.cgi \
+	-v $PWD/html/index.py:/var/www/pivpn/index.py \
 	-v $PWD/run:/home/pivpn/run \
-	xptsp/pivpn:${OS}-v3 $@
+	xptsp/pivpn:${OS}-v2 $@
