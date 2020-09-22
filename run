@@ -32,7 +32,7 @@ function cleanup()
 	LOOP=0
 	echo " detected!"
 	pgrep lighttpd >& /dev/null && printf "::: Stopping Lighttpd...\\n" && pkill lighttpd
-	[[ -f /run/server.pid ]] && kill $(cat /run/server.pid) && rm /run/server.pid
+	[[ -f /run/server.pid ]] && printf "::: Stopping OpenVPN server...\\n" && kill $(cat /run/server.pid) && rm /run/server.pid
 	exit
 }
 
@@ -72,6 +72,8 @@ cat /tmp/setupVars.conf | grep -v "#" | grep "^pivpn" | \
 			echo $key=${!key}
 		fi
 	done >> /tmp/vars
+
+echo '[[ -f /etc/openvpn/pivpn.env ]] && source /etc/openvpn/pivpn.env' >> /tmp/vars
 source /tmp/vars
 
 # Set these variables using their "pivpn*" counterparts:

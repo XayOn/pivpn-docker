@@ -1,0 +1,16 @@
+#!/bin/bash
+if [[ "$1" == "list" ]]; then
+	sudo cat /etc/openvpn/easy-rsa/pki/index.txt | sed "s|\\x|\\\x|g" | sed "s|\t|:|g" | while read a; do 
+		FILE=$(echo -e "$a" | cut -d"=" -f 2)
+		echo -n $a
+		echo -e :"$FILE":$([[ -f /home/pivpn/ovpns/${FILE}.ovpn ]] && echo "Y");
+	done
+elif [[ "$1" == "get" ]]; then
+	FILE=$(echo -e "${2}")
+	SIZE=$(du -b /home/pivpn/ovpns/${FILE}.ovpn)
+	echo "Content-Length: $(echo ${SIZE} | cut -d" " -f 1)"
+	echo ""
+	sudo cat /home/pivpn/ovpns/${FILE}.ovpn
+elif [[ "$1" == "revoke" ]]; then
+	sudo pivpn revoke $(echo -e "${2}") -y
+fi

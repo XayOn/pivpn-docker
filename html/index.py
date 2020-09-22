@@ -11,13 +11,14 @@ settings = {}
 changes = {}
 SID = ""
 REDIRECT = None
+REDIRECT_SEC = 0
 INLINE = False
 
 #===========================================================================================
 # Function that starts the header of the web page:
 #===========================================================================================
 def header():
-	global REDIRECT
+	global REDIRECT, REDIRECT_SEC
 
 	print(
 """Content-type: text/html
@@ -29,8 +30,12 @@ def header():
 	<meta charset="utf-8">
 	<meta http-equiv="X-UA-Compatible" content="IE=edge">
 	<meta name="viewport" content="width=device-width, initial-scale=1">
-	<meta content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no" name="viewport">
-	<link rel="icon" type="image/png" sizes="32x32" href="/static/img/favicon/favicon-32x32.png">
+	<meta content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no" name="viewport">""")
+	if REDIRECT != None:
+		print(
+"""	<meta http-equiv="Refresh" content=""" + '"' + str(REDIRECT_SEC) + "; url='""" + REDIRECT + """'" />""")
+	print(
+"""	<link rel="icon" type="image/png" sizes="32x32" href="/static/img/favicon/favicon-32x32.png">
 	<link rel="icon" type="image/png" sizes="16x16" href="/static/img/favicon/favicon-16x16.png">
 	<link rel="icon" type="image/png" sizes="96x96" href="/static/img/favicon/favicon-96x96.png">
 	<link rel="icon" type="image/png" sizes="192x192" href="/static/img/favicon/favicon-192x192.png">
@@ -38,10 +43,11 @@ def header():
 	<link rel="stylesheet" href="/static/css/font-awesome.min.css">
 	<link rel="stylesheet" href="/static/css/ionicons.min.css">
 	<link rel="stylesheet" href="/static/css/AdminLTE.min.css">
-""")
-	if REDIRECT != None:
-		print(
-"""	<meta http-equiv="Refresh" content="0; url='""" + REDIRECT + """'" />""")
+	<script src="/static/js/jquery-2.2.3.min.js"></script>
+	<script src="/static/js/bootstrap.min.js"></script>
+	<script src="/static/js/clipboard.min.js"></script>
+	<script src="/static/js/app.js"></script>
+	<script src="/static/js/custom.js"></script>""")
 
 #===========================================================================================
 # Helper functions for "body" function:
@@ -131,11 +137,14 @@ def body(title = ""):
 									<li class="user-footer">
 										<div class="pull-left">
 											<a href="/profile" class="btn btn-default btn-flat">Profile</a>
-										</div>
-										<div class="pull-right">
+										</div>""")
+	if settings['DEBUG'] == 0 or settings['LOGIN'] == 1:
+		print(
+"""										<div class="pull-right">
 											<a href="/logout" class="btn btn-default btn-flat">Sign out</a>
-										</div>
-									</li>
+										</div>""")
+	print(
+"""									</li>
 								</ul>
 							</li>
 						</ul>
@@ -146,7 +155,6 @@ def body(title = ""):
 		<div class="content-wrapper" style="min-height: 835px;">
 			<div class="container">
 				<section class="content-header"><h1>""" + title + """</h1></section>
-				<div class="webui_result"></div>
 				<section class="content">
 					<div class="row">""")
 
@@ -192,18 +200,12 @@ def show404():
 # Function that shows the footer of the web page:
 #===========================================================================================
 def footer(closing = True):
-	if not closing:
+	if closing:
 		print(
 """					</section>
+					<div class="webui_result"></div>
 				</div>
 			</div>""")
-	print(
-"""			<script src="/static/js/jquery-2.2.3.min.js"></script>
-			<script src="/static/js/bootstrap.min.js"></script>
-			<script src="/static/js/clipboard.min.js"></script>
-			<script src="/static/js/app.js"></script>
-			<script src="/static/js/custom.js"></script>""")
-
 	if ACTION == "login":
 		print(
 """	<script src="/static/plugins/iCheck/icheck.min.js"></script>
@@ -243,9 +245,83 @@ def showLogs():
 </div>""")
 
 #===========================================================================================
+# Function dealing with UTF8 to HTML encodings:
+#===========================================================================================
+def utf8_to_html(str):
+	table = {
+		"À": "&Agrave;",
+		"Á": "&Aacute;",
+		"Â": "&Acirc;",
+		"Ã": "&Atilde;",
+		"Ä": "&Auml;",
+		"Å": "&Aring;",
+		"Æ": "&AElig;",
+		"Ç": "&Ccedil;",
+		"È": "&Egrave;",
+		"É": "&Eacute;",
+		"Ê": "&Ecirc;",
+		"Ë": "&Euml;",
+		"Ì": "&Igrave;",
+		"Í": "&Iacute;",
+		"Î": "&Icirc;",
+		"Ï": "&Iuml;",
+		"Ð": "&ETH;",
+		"Ñ": "&Ntilde;",
+		"Ò": "&Ograve;",
+		"Ó": "&Oacute;",
+		"Ô": "&Ocirc;",
+		"Õ": "&Otilde;",
+		"Ö": "&Ouml;",
+		"Ø": "&Oslash;",
+		"Ù": "&Ugrave;",
+		"Ú": "&Uacute;",
+		"Û": "&Ucirc;",
+		"Ü": "&Uuml;",
+		"Ý": "&Yacute;",
+		"Þ": "&THORN;",
+		"ß": "&szlig;",
+		"à": "&agrave;",
+		"á": "&aacute;",
+		"â": "&acirc;",
+		"ã": "&atilde;",
+		"ä": "&auml;",
+		"å": "&aring;",
+		"æ": "&aelig;",
+		"ç": "&ccedil;",
+		"è": "&egrave;",
+		"é": "&eacute;",
+		"ê": "&ecirc;",
+		"ë": "&euml;",
+		"ì": "&igrave;",
+		"í": "&iacute;",
+		"î": "&icirc;",
+		"ï": "&iuml;",
+		"ð": "&eth;",
+		"ñ": "&ntilde;",
+		"ò": "&ograve;",
+		"ó": "&oacute;",
+		"ô": "&ocirc;",
+		"õ": "&otilde;",
+		"ö": "&ouml;",
+		"ø": "&oslash;",
+		"ù": "&ugrave;",
+		"ú": "&uacute;",
+		"û": "&ucirc;",
+		"ü": "&uuml;",
+		"ý": "&yacute;",
+		"þ": "&thorn;",
+		"ÿ": "&yuml;"
+	}
+	for element in table:
+		str = str.replace(element, table[element])
+	return str
+
+#===========================================================================================
 # Function that shows blocks of number of connected clients and system information:
 #===========================================================================================
-def showMain():
+def Home():
+	global settings
+
 	#=================================================================
 	# Gather information from the OpenVPN status log:
 	#=================================================================
@@ -256,6 +332,21 @@ def showMain():
 			server_version = line.replace("TITLE\t","")
 		elif line.startswith("CLIENT_LIST"):
 			clients.append(line)
+
+	#=================================================================
+	# Gather data transfer information from "ifconfig":
+	#=================================================================
+	txt = "{:,}"
+	results = subprocess.run(['/sbin/ifconfig', settings['pivpnDEV']], stdout=subprocess.PIPE, encoding='utf-8').stdout.split("\n")
+	for line in results:
+		parts = line.split()
+		try:
+			if parts[0] == "RX" and parts[1] == "packets":
+				RX_KB = int(int(parts[4]) / 1024)
+			elif parts[0] == "TX" and parts[1] == "packets":
+				TX_KB = int(int(parts[4]) / 1024)
+		except:
+			pass
 
 	#=================================================================
 	# Get the amount of time the computer has been up and running:
@@ -286,17 +377,14 @@ def showMain():
 		<div class="info-box-content">
 	  		<span class="info-box-text">
 				Clients count: <span class="info-box-number2">""" + str(len(clients)) + """</span>
-			</span>""")
-	if False:
-		print(
-"""			<span class="info-box-text">
-				In: <span class="info-box-number2">${MB_IN:-"0"} MB</span>
 			</span>
 			<span class="info-box-text">
-				Out: <span class="info-box-number2">${MB_OUT:-"0"} MB </span>
-			</span>""")
-	print(
-"""		</div>
+				In: <span class="info-box-number2">""" + txt.format(RX_KB) + """ KB</span>
+			</span>
+			<span class="info-box-text">
+				Out: <span class="info-box-number2">""" + txt.format(TX_KB) + """ KB </span>
+			</span>
+		</div>
 	</div>
 </div>""")
 
@@ -360,7 +448,6 @@ def showMain():
 	VIRT_FREE  = int(mem_info['SwapFree'] / 1024)
 	VIRT_USED  = VIRT_TOTAL - VIRT_FREE
 	VIRT_PERCENT = int(VIRT_USED * 100 / max(1, VIRT_TOTAL))
-	txt = "{:,}"
 
 	#=================================================================
 	# Second row:
@@ -410,7 +497,7 @@ def showMain():
 	<div class="col-md-12">
 		<div class="box box-default">
 			<div class="box-header with-border">
-				<h3 class="box-title">Connected clients</h3>
+				<h3 class="box-title">Connected Clients</h3>
 			</div>
 			<div class="box-body">
 				<div class="table-responsive">
@@ -433,7 +520,7 @@ def showMain():
 		print(
 """							<tr>
 								<td colspan="7">
-									<p style="text-align:center; font-weight: bold;">
+									<p style="font-weight: bold;">
 										<font size="+1">
 											No Clients Connected
 										</font>
@@ -443,16 +530,20 @@ def showMain():
 	# Okay, the array has stuff in it.  Show it to the user:
 	else:
 		for client in clients:
-			parts = client.split()
+			parts = client.split("\t")
+			parts[4] = int(int(parts[4]) / 1024)
+			parts[5] = int(int(parts[5]) / 1024)
+			if parts[12] == 'UNDEF':
+				parts[12] = parts[1]
 			print(
 """							<tr>
-								<td>""" + parts[1] + """</td>
+								<td>""" + utf8_to_html(parts[1]) + """</td>
 								<td>""" + parts[2] + """</td>
 								<td>""" + parts[3] + """</td>
-								<td>""" + (int(parts[4]) / 1024) + """ KB</td>
-								<td>""" + (int(parts[5]) / 1024) + """ KB</td>
-								<td>$g $h $i $j $k</td>
-								<td>$([[ "$m" == "UNDEF" ]] && echo $b || echo $m)</td>
+								<td>""" + txt.format(parts[4]) + """ KB</td>
+								<td>""" + txt.format(parts[5]) + """ KB</td>
+								<td>""" + parts[7] + " " + parts[8] + ", " + parts[10] + " " + parts[9] + """</td>
+								<td>""" + parts[12] + """</td>
 							</tr>""")
 	# Finish the block:
 	print(
@@ -503,16 +594,18 @@ def showMain():
 # Function that shows all certificates on the system (revoked and valid):
 #===========================================================================================
 def showCerts():
+	global settings
+
 	# Start the certificates page:
-	STR=""
-	if settings["ONLY_VALID"] == "0":
-		STR="Valid "
+	VALID_STR=""
+	if settings["ONLY_VALID"] == "1":
+		VALID_STR="Valid "
 	print(
 """	<div class="row">
 		<div class="col-md-12">
 			<div class="box box-info">
 				<div class="box-header with-border">
-					<h3 class="box-title">""" + STR + """Clients Certificates</h3>
+					<h3 class="box-title">""" + VALID_STR + """Clients Certificates</h3>
 				</div>
 				<div class="box-body">
 					<div class="table-responsive">
@@ -529,50 +622,62 @@ def showCerts():
 							<tbody>""")
 
 	# List all certificates, with exception of the server certificate:
-	FIRST = True
+	COUNT = 0
 	current = time.strftime('%Y%m%d')
-	result = subprocess.run(['sudo', 'cat', '/etc/openvpn/easy-rsa/pki/index.txt'], stdout=subprocess.PIPE, encoding='utf-8').stdout.split("\n")
-	for cert in result:
-		if not FIRST:
-			parts = re.sub("[\t ,.]", ":", cert).split(":")
-			if len(parts) > 1:
-				NAME = parts[-1].split('=')[-1]
-				S_EXPIRES = parts[1]
-				if len(S_EXPIRES) == 13:
-					S_EXPIRES = "20" + S_EXPIRES
-				STATE=parts[0]
-				EXPIRES = datetime.datetime.strptime(S_EXPIRES[0:8], '%Y%m%d').strftime("%b %d, %Y")
-				if STATE == "R":
-					IS_VALID = "Revoked"
-					REVOKED = parts[1]
-					if len(REVOKED) == 13:
-						REVOKED = "20" + REVOKED
-					REVOKED = datetime.datetime.strptime(REVOKED[0:8], '%Y%m%d').strftime("%b %d, %Y")
+	result = cgi.escape(subprocess.run(['/usr/local/bin/read_certs', 'list'], stdout=subprocess.PIPE, encoding='utf-8').stdout).split("\n")
+	if len(result) > 0:
+		for cert in result:
+			if COUNT > 0:
+				parts = cert.split(":")
+				if len(parts) > 1:
+					NAME = parts[5].split('=')[-1]
+					UTF8 = utf8_to_html(parts[6])
+					S_EXPIRES = parts[1]
+					if len(S_EXPIRES) == 13:
+						S_EXPIRES = "20" + S_EXPIRES
+					STATE=parts[0]
+					EXPIRES = datetime.datetime.strptime(S_EXPIRES[0:8], '%Y%m%d').strftime("%b %d, %Y")
 					ACTIONS = ""
-				else:
-					if S_EXPIRES[0:8] < current:
-						IS_VALID = "Expired"
-					elif STATE == "V":
-						IS_VALID = "Valid"
-						if os.path.exists(settings['install_home'] + "/ovpns/" + NAME + ".ovpn"):
-							ACTIONS = """<a href="/revoke?name=""" + NAME + """" class="label label-warning">Revoke Certificate</a>"""
-							NAME = """<a href="/download?name=""" + NAME + """">""" + NAME + """</a>"""
-						else:
-							ACTIONS = ""
+					if STATE == "R":
+						IS_VALID = "Revoked"
+						REVOKED = parts[1]
+						if len(REVOKED) == 13:
+							REVOKED = "20" + REVOKED
+						REVOKED = datetime.datetime.strptime(REVOKED[0:8], '%Y%m%d').strftime("%b %d, %Y")
 					else:
-						IS_VALID = "Unknown"
-					REVOKED = ""
+						if STATE == "E" or S_EXPIRES[0:8] < current:
+							IS_VALID = "Expired"
+						elif STATE == "V":
+							IS_VALID = "Valid"
+							if parts[7] == "Y" and STATE != "E":
+								ACTIONS = """<a href="/revoke/""" + NAME + """" class="label label-warning">Revoke Certificate</a>"""
+								UTF8 = """<a href="/download/""" + NAME + """.ovpn">""" + UTF8 + """</a>"""
+						else:
+							IS_VALID = "Unknown"
+						REVOKED = ""
 
-				if settings["ONLY_VALID"] == 0 or (STATE != "R" and STATE != "Expired"):
-					print(
-"""								<tr>
-									<td>""" + NAME + """</td>
-									<td>""" + IS_VALID + """</td>
-									<td>""" + EXPIRES + """</td>
-									<td>""" + REVOKED + """</td>
-									<td>""" + ACTIONS + """</td>
-								</tr>""")
-		FIRST = False
+					if settings["ONLY_VALID"] == 0 or STATE == "V":
+						print(
+	"""								<tr>
+										<td>""" + UTF8 + """</td>
+										<td>""" + IS_VALID + """</td>
+										<td>""" + EXPIRES + """</td>
+										<td>""" + REVOKED + """</td>
+										<td>""" + ACTIONS + """</td>
+									</tr>""")
+			COUNT += 1
+	else:
+		print(
+"""									<tr>
+										<td colspan="5">
+											<p style="font-weight: bold;">
+												<font size="+1">
+													No Certificates Present
+												</font>
+											</p>
+										</td>
+									</tr>""")
+		
 
 	# Close the certificates page:
 	print(
@@ -591,33 +696,27 @@ def showCerts():
 #===========================================================================================
 # Function that allows the user to download a certificate from the container:
 #===========================================================================================
-def downloadOVPN(FILE = None):
+def downloadOVPN(USER = None):
 	global URL_QUERY, settings
 
 	# Determine the filename we are aiming for.  If not exist, return with error code 1:
-	if FILE == None:
+	if USER == None:
 		try:
-			FILE = URL_QUERY['name'][0]
+			USER = URL_QUERY['name'][0]
 		except:
 			return False
-	if FILE == None:
-		return False
-	BASE = os.path.basename(FILE).replace(".ovpn", "") + ".ovpn"
-	FILE = settings['install_home'] + "/ovpns/" + BASE
-	if not os.path.exists(FILE):
+	if USER == None:
 		return False
 
 	# Send the file:
 	print(
-"""Content-Description: File Transfer
-Content-Type: application/octet-stream
-Content-Disposition: attachment; filename=""" + BASE + """
+"""Content-Type: application/octet-stream
+Content-Description: File Transfer
+Content-Disposition: attachment; filename=""" + USER + """.ovpn
 Expires: 0
 Cache-Control: must-revalidate
-Pragma: public
-Content-Length: """ + str(os.path.getsize(FILE)) + """
-""")
-	print( subprocess.run(['sudo', 'cat', FILE], stdout=subprocess.PIPE, encoding='utf-8').stdout )
+Pragma: public""")
+	print( cgi.escape(subprocess.run(['/usr/local/bin/read_certs', 'get', USER], stdout=subprocess.PIPE, encoding='utf-8').stdout) )
 	exit()
 
 #===========================================================================================
@@ -630,13 +729,13 @@ def revokeOVPN(USER = None):
 
 	if USER == None:
 		try:
-			FILE = URL_QUERY['name'][0]
+			USER = URL_QUERY['name'][0]
 		except:
 			return False
 	if USER == None:
 		print("Requires Username to be passed!")
 	else:
-		print( cgi.escape( subprocess.run(['sudo', '/usr/local/bin/pivpn', 'revoke', USER, '-y'], stdout=subprocess.PIPE, encoding='utf-8').stdout ) )
+		print( cgi.escape(subprocess.run(['/usr/local/bin/read_certs', 'revoke', USER], stdout=subprocess.PIPE, encoding='utf-8').stdout) )
 	print(
 """	</pre>
 	<div class="box-footer">
@@ -941,7 +1040,7 @@ def savePiVPN():
 		<a href="/?action=pivpn" class="btn btn-primary">Back to PiVPN Settings</a>
 	</div>""")
 
-	saveChanged()
+	saveChanged(PIVPN_ENV)
 
 #===========================================================================================
 # Function that shows the Web UI server options:
@@ -986,13 +1085,17 @@ def WebUI():
 				<span id="helpBlock" class="help-block">Disabling the login requirement disables the security provided!  Anyone can get or create credentials!</span>
 			</div>""")
 	print(
-"""		</div>
+"""			<div class="form-group">
+				<label for="pivpnWEB_PORT">Main Page Refresh Rate (in seconds)</label>
+				<input type="text" class="form-control" name="REDIRECT_SEC" id="REDIRECT_SEC" placeholder="" value=""" + '"' + str(settings['REDIRECT_SEC']) + '"' + """ oninput="this.value = this.value.replace(/[^0-9\-]/g, '').replace(/(\..*)\./g, '$1');">
+				<span id="helpBlock" class="help-block">Specifies the refresh rate in seconds for the main page.  Specify under <b>30</b> to disable.</span>
+			</div>
+		</div>
 		<div class="box-footer">
 			<button type="submit" class="btn btn-primary">Save and apply</button>
 		</div>
 	</form>
 </div>""")
-	exit()
 
 #===========================================================================================
 # Function that saves the Web UI server options:
@@ -1053,16 +1156,27 @@ def saveWebUI():
 		except:
 			doChange('Invalid', 'LOGIN', webLOGIN, 'Invalid Value')
 
-	# Change the destination server if the port has changed:
-	if 'pivpnWEB_PORT' in changes:
-		# Change the URL to match new web server port:
-		URL = getHost().split(':')[0]
-		if changes['pivpnWEB_PORT'] != 80:
-			URL = URL + ":" + str(changes['pivpnWEB_PORT'])
+	# Has the refresh rate changed?  If so, store the change:
+	REDIRECT_SEC = form.getvalue('REDIRECT_SEC')
+	try:
+		REDIRECT_SEC = int(REDIRECT_SEC)
+		changed = settings['REDIRECT_SEC'] != REDIRECT_SEC and settings['REDIRECT_SEC'] != REDIRECT_SEC
+		if REDIRECT_SEC >= 0:
+			doChange(changed, 'REDIRECT_SEC', REDIRECT_SEC)
+		else:
+			doChange('Invalid', 'REDIRECT_SEC', REDIRECT_SEC, 'Invalid Refresh Rate!')
+	except:
+		doChange('Invalid', 'REDIRECT_SEC', REDIRECT_SEC, 'Invalid Refresh Rate!')
 
-		# Kill the old lighttpd server, then relaunch:
-	else:
-		URL = ""
+	# Redirect user to new web server port if web server port has changed:
+	URL = ""
+	if 'pivpnWEB_PORT' in changes:
+		try:
+			URL = os.environ['HTTP_HOST'].split(':')[0]
+			if changes['pivpnWEB_PORT'] != 80:
+				URL = URL + ":" + str(changes['pivpnWEB_PORT'])
+		except:
+			pass
 
 	# Close the debugging message section:
 	if settings['DEBUG'] == 1:
@@ -1071,10 +1185,10 @@ def saveWebUI():
 	if not INLINE:
 		print(
 """	<div class="box-body">
-		<a href=""" + '"' + URL + '"' + """/?action=webui" class="btn btn-primary">Back to Web UI Settings</a>
+		<a href=""" + '"' + URL + """/webui" class="btn btn-primary">Back to Web UI Settings</a>
 	</div>""")
 
-	saveChanged()
+	saveChanged(PIVPN_ENV)
 
 #===========================================================================================
 # Function that shows the Profile settings:
@@ -1149,7 +1263,7 @@ def saveProfile():
 		<a href="/?action=profile" class="btn btn-primary">Back to Profile Settings</a>
 	</div>""")
 
-	saveChanged()
+	saveChanged(PIVPN_ENV)
 
 #===========================================================================================
 # Function that shows the Web UI login box:
@@ -1212,14 +1326,8 @@ def getRemoteAddr():
 	except:
 		return ""
 
-def getHost():
-	try:
-		return os.environ['HTTP_HOST']
-	except:
-		return ""
-
 def getCookies():
-	# Parse the cookie list to get the session ID.  Add 1 hour to current time and set Result to True! :)
+	# Parse the cookie list to get the session ID.
 	my_dict = {}
 	if 'HTTP_COOKIE' in os.environ:
 		cookies = os.environ['HTTP_COOKIE']
@@ -1229,26 +1337,31 @@ def getCookies():
 			my_dict[ cookie[0] ] = cookie[1]
 	return my_dict
 
-def readSessions(exclude = ""):
+def setCookie(key, val, expires = 0):
+	print("Set-Cookie: " + key + "=" + val + "; expires=" + time.strftime("%a, %d-%b-%Y %T GMT", time.gmtime( expires )))
+
+def readSessions():
+	global sessions
+
 	# Read the session file:
 	try:
 		file = open('/tmp/sessions.json', 'r')
 	except:
 		return {}
 	data = file.read()
-	sessions = json.loads(data)
+	list = json.loads(data)
 	file.close()
 
 	# Is the session still valid?
-	active = {}
+	sessions = {}
 	current = int(time.time())
-	for key in sessions:
-		if key != exclude and sessions[key]['expires'] > current:
-			active[key] = sessions[key]
-	return active
+	if list != None:
+		for key in list:
+			if list[key]['expires'] > current:
+				sessions[key] = list[key]
 
-def writeSessions(sessions):
-	# Write the updated session file:
+def writeSessions():
+	global sessions
 	file = open('/tmp/sessions.json', 'w')
 	file.write(json.dumps(sessions, indent=4))
 	file.close()
@@ -1265,9 +1378,6 @@ def checkLogin():
 	if settings['guiUsername'] != username or settings['guiPassword'] != password:
 		return False
 
-	# Get all the session IDs:
-	sessions = readSessions()
-
 	# Generate SID and add it to the array:
 	SID = get_random_alphanumeric_string(32)
 	sessions[SID] = {
@@ -1275,11 +1385,9 @@ def checkLogin():
 		'remote': getRemoteAddr()
 	}
 
-	# Write the updated session file:
-	writeSessions(sessions)
 
 	# Output a cookie for the user:
-	print("Set-Cookie: sid=" + SID + "; expires=" + time.strftime("%a, %d-%b-%Y %T GMT", time.gmtime(sessions[SID]['expires'])))
+	setCookie('sid', SID, sessions[SID]['expires'])
 
 	# Finally, set up the web redirect to the main page:
 	REDIRECT="/"
@@ -1289,14 +1397,16 @@ def checkLogin():
 # Function to validate the session ID:
 #===========================================================================================
 def checkSession():
-	# Get all the session IDs and cookies:
-	sessions = readSessions()
-	cookies = getCookies()
+	global sessions
 
-	# If the specified session exists, return True:
+	# If the specified session exists, add an hour and return True:
 	try:
 		SID = cookies['sid']
-		return getRemoteAddr() == sessions[ SID ]['remote']
+		result = getRemoteAddr() == sessions[ SID ]['remote']
+		if result:
+			sessions[ SID ]['expires'] = int(time.time()) + 60
+			setCookie('sid', SID, sessions[SID]['expires'])
+		return result
 	except KeyError:
 		return False
 
@@ -1304,15 +1414,13 @@ def checkSession():
 # Function to log the user out:
 #===========================================================================================
 def logOut():
+	global sessions
 	cookies = getCookies()
 	try:
-		sessions = readSessions( cookies['sid'] )
+		sessions.pop(cookies['sid'])
 	except:
-		sessions = readSessions("")
-	writeSessions(sessions)
-
-	# Output a cookie for the user:
-	print("Set-Cookie: sid=" + SID + "; expires=" + time.strftime("%a, %d-%b-%Y %T GMT", time.gmtime(0)))
+		pass
+	setCookie('sid', SID)
 
 #===========================================================================================
 # Functions dealing with PiVPN docker container settings:
@@ -1322,13 +1430,15 @@ def readSettings(FILE):
 	if os.path.exists(FILE):
 		with open(FILE) as f:
 			for line in f:
-				(key, val) = line.strip().split("=")
+				parts = line.strip().split("=")
 				try:
-					settings[key] = int(val)
+					settings[ parts[0] ] = int( parts[1] )
 				except ValueError:
-					settings[key] = val
+					settings[ parts[0] ] = parts[1]
+				except IndexError:
+					pass
 
-def saveChanged():
+def saveChanged(FILE):
 	global changes, settings
 
 	# Uncomment to show the contents of the "changes" dictionary:
@@ -1341,7 +1451,7 @@ def saveChanged():
 	# Save contents of settings dict, then read in the existing variable file into settings:
 	old_settings = settings
 	settings = {}
-	readSettings(PIVPN_ENV)
+	readSettings(FILE)
 
 	# Apply the changes to the variable dictionary:
 	for key in changes:
@@ -1354,7 +1464,7 @@ def saveChanged():
 	#print(json.dumps(env, indent=4)); exit()
 
 	# Write the updated variable dictionary to disk:
-	with open(PIVPN_ENV, "w") as f:
+	with open(FILE, "w") as f:
 		for key in settings:
 			try:
 				f.write(key + '=' + str(int(settings[key])) + "\n")
@@ -1364,23 +1474,178 @@ def saveChanged():
 	# Restore contents of the settings dictionary:
 	settings = old_settings
 
-def defaultSetting(key, default_value, add_change = False):
+def defaultSetting(key, default_value, FILE = None):
 	global settings, changes
 	try:
 		settings[key]
 	except KeyError:
 		settings[key] = default_value
-		if add_change:
+		if FILE != None:
 			changes[key] = default_value
-			saveChanged()
+			saveChanged(FILE)
 
 #===========================================================================================
-# Code dealing with the loading variables, and the setting of default values if not exist:
+# Function doing all the main decision-making:
 #===========================================================================================
+def Main():
+	global PIVPN_ENV, form, ACTION, settings, changes, SID, INLINE, validSession
+	global REDIRECT, REDIRECT_SEC, URL_QUERY, cookies, sessions, parsed
+
+	# Uncomment to force a particular action.  Helpful during debugging... :p
+	#ACTION="certs"
+
+	# Get all the session IDs and cookies:
+	cookies = getCookies()
+	sessions = readSessions()
+
+	# Quotes are there for BASH.  Let's remove them for us:
+	for key in settings:
+		try:
+			settings[key] = settings[key].replace('"', '')
+		except:
+			pass
+
+	# Parse the URI to get the parameters passed:
+	try:
+		parsed = urllib.parse.urlparse(os.environ['REQUEST_URI'])
+		#print(json.dumps(parsed, indent=4)); exit()
+		URL_QUERY = parse_qs(parsed.query)
+		#print(json.dumps(URL_QUERY, indent=4)); exit()
+	except:
+		parsed = []
+		URL_QUERY = {}
+
+	# If we have been redirected to the 404, see if we can figure out the action requested:
+	if ACTION == "404":
+		try:
+			ACTION = parsed[2].split('?')[0][1:]
+			parts = ACTION.split('/')
+			if parts[0] == "download" or parts[0] == "revoke":
+				ACTION = parts[0]
+				URL_QUERY['name'] = [ '/'.join(parts[1:]).replace('.ovpn', '') ]
+			else:
+				ACTION = os.path.basename(parsed[2].split('?')[0])
+		except:
+			pass
+
+	# Is the "inline" parameter in the URL_QUERY variable:
+	INLINE = 'inline' in URL_QUERY
+
+	# If either of the following is true:
+	# 1) debug is disabled, OR 
+	# 2) debug is enabled and login requirement is enabled
+	# Then check if the session ID isn't valid for any reason.  If the session ID isn't valid, force a login:
+	validSession = True
+	if settings['DEBUG'] == 1 and settings['LOGIN'] == 0:
+		if ACTION == "checklogin" or ACTION == "login" or ACTION == "logout":
+			REDIRECT = "/"
+			ACTION = ""
+		validSession = True
+	elif settings['DEBUG'] == 0 or settings['LOGIN'] == 1:
+		validSession = checkSession()
+		if ACTION == "checklogin":
+			if checkLogin():
+				ACTION=""
+		elif ACTION != "404":
+			if not validSession:
+				ACTION = "login"
+
+	# Actions that don't require the header and footer to be sent:
+	if ACTION == "download":
+		if not downloadOVPN():
+			ACTION = "404"
+	elif ACTION == "404":
+		print('HTTP/1.1 404 Not Found')
+	elif ACTION == "logout":
+		REDIRECT = "/login"
+
+	# Call these functions only if we aren't being called as an inline function:
+	elif ACTION == "saveprofile":
+		if INLINE:
+			saveProfile()
+			exit()
+		if settings['DEBUG'] == 0:
+			REDIRECT = "/profile"
+	elif ACTION == "savepivpn":
+		if INLINE:
+			savePiVPN()
+			exit()
+		if settings['DEBUG'] == 0:
+			REDIRECT = "/pivpn"
+	elif ACTION == "savewebui":
+		if INLINE:
+			saveWebUI()
+			exit()
+		if settings['DEBUG'] == 0:
+			REDIRECT = "/webui"
+
+	# Set up automatic refresh for main page ONLY if refresh time >= 30:
+	if ACTION == "" or ACTION == None:
+		try:
+			REDIRECT_SEC = int(settings['REDIRECT_SEC'])
+		except:
+			pass
+		if REDIRECT_SEC >= 30:
+			REDIRECT = "/"
+		
+	# All the other actions:
+	header()
+	if ACTION == "" or ACTION == None:
+		body("Status")
+		Home()
+	elif ACTION == "logs":
+		body("Logs")
+		showLogs()
+	elif ACTION == "certs":
+		body("Certificates")
+		showCerts()
+	elif ACTION == "revoke":
+		body("Revoke Certificate")
+		revokeOVPN()
+	elif ACTION == "create":
+		body("Create Certificate")
+		createOVPN()
+	elif ACTION == "profile":
+		body("Profile Settings")
+		showProfile()
+	elif ACTION == "pivpn":
+		body("PiVPN Settings")
+		PiVPN()
+	elif ACTION == "make":
+		body("Create Certificate")
+		makeCert()
+	elif ACTION == "webui":
+		body("Web UI Settings")
+		WebUI()
+	elif ACTION == "logout":
+		REDIRECT = "/login"
+		body("Logout")
+		logOut()
+	elif ACTION == "login" or ACTION == "checklogin":
+		showLogin()
+	elif ACTION == "saveprofile":
+		body("Profile Settings")
+		saveProfile()
+	elif ACTION == "savepivpn":
+		body("PiVPN Settings")
+		savePiVPN()
+	elif ACTION == "savewebui":
+		body("Web UI Settings")
+		saveWebUI()
+	else:
+		show404()
+	footer()
+
+#===========================================================================================
+# Core code section:
+#===========================================================================================
+# Read our settings files:
 readSettings("/tmp/vars")
 readSettings(PIVPN_ENV)
 #print(json.dumps(settings, indent=4)); exit()
-defaultSetting('guiCreation',  datetime.datetime.now().strftime("%b %d, %Y"), True)
+
+# We need to define some defaults, in case the variables weren't already defined:
+defaultSetting('guiCreation',  datetime.datetime.now().strftime("%b %d, %Y"), PIVPN_ENV)
 defaultSetting('guiName',      'Adminstrator')
 defaultSetting('guiUsername',  'admin')
 defaultSetting('guiPassword',  'password')
@@ -1388,135 +1653,18 @@ defaultSetting('pivpnWEB_MGMT', 49081)
 defaultSetting('DEBUG',         0)
 defaultSetting('LOGIN',         1)
 defaultSetting('ONLY_VALID',    1)
+defaultSetting('REDIRECT_SEC',  0)
 
-# If debug mode, set standard error to standard out.  That way, we can see errors in the web server output:
+# Run the Main function.  Use try/except bracket to capture error messages ONLY if debug is enabled:
 if settings['DEBUG'] == 1:
 	sys.stderr = sys.stdout
-
-# Quotes are there for BASH.  Let's remove them for us:
-for key in settings:
 	try:
-		settings[key] = settings[key].replace('"', '')
-	except:
+		Main()
+	except SystemExit:
 		pass
-
-#===========================================================================================
-# Main decision-making branching code:
-#===========================================================================================
-# Uncomment to force a particular action.  Helpful during debugging... :p
-#ACTION="404"
-
-# Parse the URI to get the parameters passed:
-try:
-	parsed = urllib.parse.urlparse(os.environ['REQUEST_URI'])
-	#print(json.dumps(parsed, indent=4)); exit()
-	URL_QUERY = parse_qs(parsed.query)
-	#print(json.dumps(URL_QUERY, indent=4)); exit()
-except:
-	parsed = []
-	URL_QUERY = {}
-
-# If we have been redirected to the 404, see if we can figure out the action requested:
-if ACTION == "404":
-	try:
-		ACTION = os.path.basename(parsed[2].split('?')[0])
 	except:
-		pass
-	#print(ACTION); exit()
-
-# Is the "inline" parameter in the URL_QUERY variable:
-INLINE = 'inline' in URL_QUERY
-
-# If either of the following is true:
-# 1) debug is disabled, OR 
-# 2) debug is enabled and login requirement is enabled
-# Then check if the session ID isn't valid for any reason.  If the session ID isn't valid, force a login:
-if settings['DEBUG'] == 1 and settings['LOGIN'] == 0:
-	if ACTION == "checklogin" or ACTION == "login" or ACTION == "logout":
-		REDIRECT = "/"
-		ACTION = ""
-elif settings['DEBUG'] == 0 or settings['LOGIN'] == 1:
-	validSession = checkSession()
-	if ACTION == "checklogin":
-		if checkLogin():
-			ACTION=""
-	elif ACTION != "404":
-		if not validSession:
-			ACTION = "login"
-
-# Actions that don't require the header and footer to be sent:
-if ACTION == "download":
-	if not downloadOVPN():
-		ACTION = "404"
-elif ACTION == "404":
-	print('HTTP/1.1 404 Not Found')
-elif ACTION == "logout":
-	REDIRECT = "/login"
-
-# Call these functions only if we aren't being called as an inline function:
-elif ACTION == "saveprofile":
-	if INLINE:
-		saveProfile()
-		exit()
-	if settings['DEBUG'] == 0:
-		REDIRECT = "/profile"
-elif ACTION == "savepivpn":
-	if INLINE:
-		savePiVPN()
-		exit()
-	if settings['DEBUG'] == 0:
-		REDIRECT = "/pivpn"
-elif ACTION == "savewebui":
-	if INLINE:
-		saveWebUI()
-		exit()
-	if settings['DEBUG'] == 0:
-		REDIRECT = "/webui"
-
-# All the other actions:
-header()
-if ACTION == "" or ACTION == None:
-	body("Status")
-	showMain()
-elif ACTION == "logs":
-	body("Logs")
-	showLogs()
-elif ACTION == "certs":
-	body("Certificates")
-	showCerts()
-elif ACTION == "revoke":
-	body("Revoke Certificate")
-	revokeOVPN()
-elif ACTION == "create":
-	body("Create Certificate")
-	createOVPN()
-elif ACTION == "profile":
-	body("Profile Settings")
-	showProfile()
-elif ACTION == "pivpn":
-	body("PiVPN Settings")
-	PiVPN()
-elif ACTION == "make":
-	body("Create Certificate")
-	makeCert()
-elif ACTION == "webui":
-	body("Web UI Settings")
-	WebUI()
-elif ACTION == "logout":
-	REDIRECT = "/login"
-	body("Logout")
-	logOut()
-elif ACTION == "login" or ACTION == "checklogin":
-	showLogin()
-elif ACTION == "saveprofile":
-	body("Profile Settings")
-	saveProfile()
-elif ACTION == "savepivpn":
-	body("PiVPN Settings")
-	savePiVPN()
-elif ACTION == "savewebui":
-	body("Web UI Settings")
-	saveWebUI()
+		print("\n\n<pre>")
+		traceback.print_exc()
 else:
-	show404()
-footer()
+	Main()
+writeSessions()

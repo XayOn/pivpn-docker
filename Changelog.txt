@@ -1,0 +1,55 @@
+#8) Unreleased
+======================================================
+- Fixed issue where footer scripts weren't always included, and footer wasn't closed properly.
+- Excluded logout button when debug is enabled and login is disabled.
+- Added code to get the amount of data transferred over the OpenVPN connection.
+- Fixed the code outputting the client list, as numbers and dates weren't outputted correctly.
+- UTF-8 encoded names are correctly outputted for HTML viewing.
+- Added code to correctly show expired certificates.
+- Modified code to use virtual paths to download OVPN files instead of "/download?name=".
+- Fixed download functions for ovpn certificates using names with UTF-8-encoded letters.
+- Added page refresh rate option to Web UI settings, and supporting code to main page.
+- Added code to adjust session expiry time if session is still valid.
+- Moved most of non-function code into function "Main".
+- Added debug bracket to output traceback if debug mode is enabled.
+
+#7) Sep 17, 2020: Plugged doozy of exploit
+======================================================
+- Converted the web script from a BASH script to Python.
+- Limited sudo actions to only necessary actions that cannot be performed any other way.
+- Servers cannot be restarted by the web script at the moment.
+
+#6) Sep 3, 2020: Web UI nearly complete
+======================================================
+No notes available
+
+#5) Aug 28, 2020: Unfinished version 2 
+======================================================
+No notes available
+
+#4) Aug 27, 2020:  OpenVPN-launcher error fixes
+======================================================
+This commit fixes the ability to launch OpenVPN successfully within the container, 
+and fixes a relaunch of the PiVPN installer.
+
+#3) Aug 23rd, 2020:  PiVPN repo location fix
+======================================================
+The PiVPN repo location was incorrectly, causing errors to occur during the Docker 
+image build on a Raspberry Pi.  Image otherwise built correctly on AMD64 machine.
+
+#2) Aug 23rd, 2020: Minor fixes
+======================================================
+This commit fixes (not very) minor issues, such as PiVPN not launching with data from 
+persistant storage.  Also removes warning message about pivpn user already exists during 
+PiVPN install script.
+
+#1) Aug 23rd, 2020: Refactor to use latest PiVPN
+======================================================
+This commit refactors this repo to use the latest PiVPN commit in building the docker image.
+
+It also removes the seperate Dockerfile builds per architecture, seeking to use one Dockerfile
+image to generate multiple architecture containers.
+
+Documentation has been updated to add volume mount point information for persistant server and
+client certificates, as well as DH parameter storage.  It is noted that certificates and parameters
+are generated with first run of the container, as well as the need for persistant storage.

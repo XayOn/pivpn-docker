@@ -8,9 +8,6 @@ ENV DEBIAN_FRONTEND=noninteractive
 # Set as env so that it can also be used in the run script during the execution.
 ENV install_user=pivpn
 
-# Make sure the IN_DOCKER variable is cleared:
-ENV IN_DOCKER=
-
 # Pulled PiVPN Repository location
 ARG pivpnFilesDir=/usr/local/src/pivpn
 
@@ -127,20 +124,33 @@ RUN sed -i "/^pivpnHOST=/d" /tmp/setupVars.conf \
 #  7. Enable the lighttpd "cgi" configuration module.
 #  8. Enable the lighttpd "auth" configuration module.
 #  9. Enable our custom "pivpn" configuration module.
+# 10. Remove original "/etc/pivpn/openvpn/setupVars.conf" file.
+# 11. Link "/etc/pivpn/openvpn/setupVars.conf" to "/tmp/vars".
+# 12. Remove original "/etc/pivpn/setupVars.conf" file.
+# 13. Link "/etc/pivpn/setupVars.conf" to "/tmp/vars".
+# 14. Copy "/tmp/setupVars.conf" to "/tmp/vars" so that PiVPN will work as expected without running init script.
+# 15. Add line to "/tmp/vars" to load "/etc/openvpn/pivpn.env" so that PiVPN will work as expected without running init script.
 #=============================================================================================================================
 COPY html /var/www/pivpn/
 COPY 12-pivpn.conf /etc/lighttpd/conf-available/12-pivpn.conf
 COPY pivpn-gui.sudoers /etc/sudoers.d/pivpn-gui
+COPY read_certs /usr/local/bin/read_certs
 RUN sed -i "/^main /d" "${MODDED}" \
 	&& chown -R www-data:www-data -R /var/www/pivpn/ \
 	&& cp /etc/lighttpd/lighttpd.conf /etc/lighttpd/lighttpd.conf.bak \
 	&& lighttpd-enable-mod cgi \
 	&& lighttpd-enable-mod auth \
-	&& lighttpd-enable-mod pivpn
+	&& lighttpd-enable-mod pivpn \
+	&& rm /etc/pivpn/openvpn/setupVars.conf \
+	&& ln -sf /tmp/vars /etc/pivpn/openvpn/setupVars.conf \
+	&& rm /etc/pivpn/setupVars.conf \
+	&& ln -sf /tmp/vars /etc/pivpn/setupVars.conf \
+	&& cp /tmp/setupVars.conf /tmp/vars \
+	&& echo '[[ -f /etc/openvpn/pivpn.env ]] && source /etc/openvpn/pivpn.env' >> /tmp/vars
 
 #=============================================================================================================================
 # Everything else required for this Docker image:
 #=============================================================================================================================
 WORKDIR /home/"${install_user}"
 COPY run /home/"${install_user}/"
-CMD /home/"${install_user}"/run
+CMD ./run
