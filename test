@@ -9,4 +9,5 @@ docker run --name pivpn -it --rm --privileged --net host \
 	-v $HOME/ovpns:/home/pivpn/ovpns \
 	-v $PWD/html/index.py:/var/www/pivpn/index.py \
 	-v $PWD/run:/home/pivpn/run \
+	-v $PWD/read_certs:/usr/local/bin/read_certs \
 	xptsp/pivpn:${OS}-v2 $@

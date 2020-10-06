@@ -1,4 +1,14 @@
-#8) Unreleased
+#9) Oct 6, 2020: Some Minor Bugfixes
+======================================================
+- Moved files meant for docker environment into their own "files" directory.
+- Added code changes to PiVPN to correctly show names like "José".
+- Reverted URL back to "/revoke?name=<name>" from "/revoke/<name>".
+- Added proper UTF-8 encoding for revokation code in "revokeOVPN" function.
+- Fixed HTML field names in the "createOVPN" function to avoid accidentally creating lists.
+- Fixed incorrect values for "Show Valid Certs Only" setting in "webUI" function.
+- Fixed possible incorrect parsing of "REQUEST_URI" variable and arguments.
+
+#8) Sep 22, 2020: Major and Minor bugfixes
 ======================================================
 - Fixed issue where footer scripts weren't always included, and footer wasn't closed properly.
 - Excluded logout button when debug is enabled and login is disabled.

@@ -650,7 +650,7 @@ def showCerts():
 						elif STATE == "V":
 							IS_VALID = "Valid"
 							if parts[7] == "Y" and STATE != "E":
-								ACTIONS = """<a href="/revoke/""" + NAME + """" class="label label-warning">Revoke Certificate</a>"""
+								ACTIONS = """<a href="/revoke?name=""" + NAME + """" class="label label-warning">Revoke Certificate</a>"""
 								UTF8 = """<a href="/download/""" + NAME + """.ovpn">""" + UTF8 + """</a>"""
 						else:
 							IS_VALID = "Unknown"
@@ -735,7 +735,8 @@ def revokeOVPN(USER = None):
 	if USER == None:
 		print("Requires Username to be passed!")
 	else:
-		print( cgi.escape(subprocess.run(['/usr/local/bin/read_certs', 'revoke', USER], stdout=subprocess.PIPE, encoding='utf-8').stdout) )
+		result = cgi.escape(subprocess.run(['/usr/local/bin/read_certs', 'revoke', USER], stdout=subprocess.PIPE, encoding='utf-8').stdout)
+		print( utf8_to_html(result) )
 	print(
 """	</pre>
 	<div class="box-footer">
@@ -759,16 +760,16 @@ def makeCert():
 					<input type="text" class="form-control" id="name" name="name" placeholder="Username">
 				</div>
 				<div class="form-group">
-					<label for="name">Password</label>
+					<label for="pass">Password</label>
 					<input type="password" class="form-control" id="pass" name="pass" placeholder="Password that is minimum 4 characters long">
 				</div>
 				<div class="form-group">
-					<label for="name">Password</label>
+					<label for="pass2">Password</label>
 					<input type="password" class="form-control" id="pass2" name="pass2" placeholder="Repeat your password">
 				</div>
 				<div class="form-group">
-					<label for="name">Days Until Expires</label>
-					<input type="number" class="form-control" id="name" name="name" placeholder="Number of days" value="3650" oninput="this.value = this.value.replace(/[^0-9]/g, '').replace(/(\..*)\./g, '$1');">
+					<label for="days">Days Until Expires</label>
+					<input type="number" class="form-control" id="days" name="days" placeholder="Number of days" value="3650" oninput="this.value = this.value.replace(/[^0-9]/g, '').replace(/(\..*)\./g, '$1');">
 				</div>
 				<span class="help-block"></span>
 			</div>
@@ -802,7 +803,9 @@ def createOVPN(USER = None, PASS = None):
 				days = max(0, min( 3650, int(form.getvalue('days')) ))
 			except:
 				days = 3650
-			print( cgi.escape( subprocess.run(['sudo', '/usr/local/bin/pivpn', 'add', '-d', '3650', '-n', USER, '-p', PASS], stdout=subprocess.PIPE).stdout.decode()) )
+			USER = USER.replace('\\', '\\\\')
+			result = cgi.escape( subprocess.run(['sudo', '/usr/local/bin/pivpn', 'add', '-d', '3650', '-n', USER, '-p', PASS], stdout=subprocess.PIPE, encoding='utf-8').stdout)
+			print( utf8_to_html(result) )
 	print(
 """	</pre>
 	<div class="box-footer">
@@ -1062,8 +1065,8 @@ def WebUI():
 			<div class="form-group">
 				<label for="DEBUG">Show Valid Certificates Only</label>
 				<select name="ONLY_VALID" id="ONLY_VALID" class="form-control">
-					<option value="1" """ + is_selected(settings['ONLY_VALID'], 0) + """>Disabled</option>
-					<option value="0" """ + is_selected(settings['ONLY_VALID'], 1) + """>Enabled</option>
+					<option value="0" """ + is_selected(settings['ONLY_VALID'], 0) + """>Disabled</option>
+					<option value="1" """ + is_selected(settings['ONLY_VALID'], 1) + """>Enabled</option>
 				</select>
 			</div>
 			<div class="form-group">
@@ -1385,7 +1388,6 @@ def checkLogin():
 		'remote': getRemoteAddr()
 	}
 
-
 	# Output a cookie for the user:
 	setCookie('sid', SID, sessions[SID]['expires'])
 
@@ -1506,21 +1508,22 @@ def Main():
 			pass
 
 	# Parse the URI to get the parameters passed:
+	parsed = []
+	URL_QUERY = {}
 	try:
 		parsed = urllib.parse.urlparse(os.environ['REQUEST_URI'])
 		#print(json.dumps(parsed, indent=4)); exit()
 		URL_QUERY = parse_qs(parsed.query)
 		#print(json.dumps(URL_QUERY, indent=4)); exit()
 	except:
-		parsed = []
-		URL_QUERY = {}
+		pass
 
 	# If we have been redirected to the 404, see if we can figure out the action requested:
 	if ACTION == "404":
 		try:
 			ACTION = parsed[2].split('?')[0][1:]
 			parts = ACTION.split('/')
-			if parts[0] == "download" or parts[0] == "revoke":
+			if parts[0] == "download":
 				ACTION = parts[0]
 				URL_QUERY['name'] = [ '/'.join(parts[1:]).replace('.ovpn', '') ]
 			else:
