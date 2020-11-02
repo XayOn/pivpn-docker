@@ -138,7 +138,7 @@ while [[ "${LOOP}" -eq 1 ]]; do
 	[[ ! -d /etc/openvpn/easy-rsa || ! -f /etc/openvpn/crl.pem ]] && GenerateOpenVPN
 
 	# Create the "/etc/openvpn/server.conf" file.
-	createServerConf
+	[[ ! -f /etc/openvpn/server.conf ]] && createServerConf
 
 	# Change the VPN network adapter's name if it is not "tun0".
 	[[ "pivpnDEV" != "tun0" ]] && sed -i "s|dev tun|dev ${pivpnDEV}\ndev-type tun|" /etc/openvpn/server.conf
