@@ -1,6 +1,8 @@
 # VERSION 1.0
 
-FROM phusion/baseimage:18.04-1.0.0
+FROM phusion/baseimage:18.04-1.0.0-arm
+
+COPY qemu-arm-static /usr/bin/
 
 # Silence error:
 ENV DEBIAN_FRONTEND=noninteractive
